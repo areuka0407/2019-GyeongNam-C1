@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부산국제뮤직페스티벌</title>
+    <script src="/js/jquery-3.3.1.js"></script>
+    <link rel="stylesheet" href="bootstrap-4.4.1-dist/css/bootstrap.min.css">
+    <script src="bootstrap-4.4.1-dist/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="fontAwesome/css/font-awesome.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/script.js"></script>
+</head>
+<body>
+    <!-- 로그인 폼 -->
+    <input type="checkbox" id="user-open" hidden>
+    <div id="user-form">
+        <label for="user-open"></label>
+        <div>
+            <h5>Login at <b>Busan Music Festival</b></h5>
+            <form method="post">
+                <div class="form-group">
+                    <input type="text" id="user_id" name="user_id" class="form-control" placeholder="아이디">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" name="password" class="form-control" placeholder="비밀번호">
+                </div>
+                <button title="로그인" class="mt-4">
+                    <i class="fa fa-arrow-right"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+<div id="wrap">
+    <!-- 헤더 -->
+    <div id="header" class="px-5">
+        <div class="container-fluid d-flex justify-content-between align-items-center h-100">
+            <div class="left d-flex align-items-center">
+                <a data-href="index.html" class="logo link"><img src="images/Llogo.png" alt="부산국제뮤직페스티벌" height="60"></a>
+            </div>
+            <div class="center">
+                <div id="nav">
+                    <div class="item">
+                        <a class="link" data-href="index.html">홈</a>
+                    </div>
+                    <div class="item">
+                        <a class="link" data-href="library.html">라이브러리</a>
+                    </div>
+                    <div class="item">
+                        <a class="link" data-href="queue.html">대기열</a>
+                    </div>
+                    <div class="item">
+                        <label class="mb-0" for="user-open">로그인</label>
+                    </div>
+                </div>
+            </div>
+            <div class="right">
+                <div id="search" class="ml-5">
+                    <form class="d-flex align-items-center h-100">
+                        <input type="text" id="search-bar" name="keyword" placeholder="검색어를 입력하세요.">
+                        <button id="search-btn"><i class="fa fa-search"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 재생 -->
+    <div id="play-area">
+        <div id="process-bar" class="range">
+            <input type="range" min="0">
+        </div>
+        <div class="d-flex justify-content-between h-100">
+            <div class="control">
+                <button id="btn-prev" class="btn-movement">
+                    <i class="fa fa-step-backward fa-lg"></i>
+                </button>
+                <button id="btn-play">
+                    <i class="fa fa-play fa-2x"></i>
+                </button>
+                <button id="btn-next" class="btn-movement">
+                    <i class="fa fa-step-forward fa-lg"></i>
+                </button>
+                <small class="text-muted ml-4"><span id="current-time">0:00</span> / <span id="duration">0:00</span></small>
+            </div>
+            <div class="info d-flex h-100 align-items-center">
+                <div class="image"></div>
+                <div class="text pl-3">
+                    <b class="title">재생 중인 음악이 없습니다.</b>
+                    <p class="mb-1">
+                        <small class="artist text-muted"></small>
+                        <small class="duration text-muted ml-2"></small>
+                    </p>
+                </div>
+            </div>
+            <div class="option d-flex align-items-center">
+                <div id="btn-lyric" class="item">
+                    <button><i class="fa fa-font"></i></button>
+                </div>
+                <div id="btn-repeat" class="item mr-3">
+                    <button><i class="fa fa-repeat"></i></button>
+                </div>
+                <div class="item pr-5">
+                    <span class="mr-3"><i class="fa fa-volume-down fa-lg"></i></span>
+                    <div id="volume-bar" class="range small" style="width: 90px;">
+                        <input type="range" min="0" max="1" step="0.01" value="0.5">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 가사 -->
+    <div id="lyric">
+        <div class="cover-image"></div>
+        <div class="info">
+            <h5 class="title mb-1">가사가 없습니다.</h5>
+            <span class="artist"></span>
+        </div>
+        <div class="lyrics">
+        </div>
+    </div>
+    <!-- 실제 콘텐츠 -->
+    <div class="contents container-fluid py-3">
+        <div class="col-auto">
+            <div class="row">
+                <div class="col-12 py-3">
+                    <div class="section-title pl-3">
+                        <h4 class="text-blue">대기열</h4>
+                    </div>
+                    <div id="queue-list" class="album-list wrap">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
