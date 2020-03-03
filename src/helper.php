@@ -35,6 +35,7 @@ function user(){
 function json_response($data){
     header("Content-Type: application/json");
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 function emptyCheck($actionAtFail){

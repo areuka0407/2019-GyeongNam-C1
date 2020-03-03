@@ -11,6 +11,8 @@ class MusicController {
 
     // PlayList
     function getPlaylist(){
+        if(!user()) json_response([]);
+
         $list = DB::fetchAll("SELECT * FROM playlist WHERE uid = ?", [user()->id]);
         json_response($list);
     }
@@ -39,23 +41,27 @@ class MusicController {
     }
 
 
+    function getAllPlaylist(){
+        $list = DB::fetchAll("SELECT * FROM playlist");
+        json_response($list);
+    }
+
+
     // History
     function setHistory(){
-        $id = 0;
         $input = file_get_contents("php://input");
-        $exist = DB::fetch("SELECT * FROM history WHERE uid = ?", [user()->id]);
-        if(!$exist) {
-            DB::query("INSERT INTO history(uid, list) VALUES(?, '[]')", [user()->id]);
-            $id = DB::getDB()->lastInsertId();
-        }
-        else $id = $exist->id;
-
-        DB::query("UPDATE history SET list = ? WHERE id = ?", [$input, $id]);
-        json_response($input);
+        DB::query("UPDATE history SET list = ? WHERE uid = ?", [$input, user()->id]);
+        json_response(["list" => $input]);
     }
 
     function getHistory(){
+        if(!user()) json_response(["list" => "[]"]);
+
         $result = DB::fetch("SELECT * FROM history WHERE uid = ?", [user()->id]);
+        if(!$result){
+            DB::query("INSERT INTO history(uid, list) VALUES (?, '[]')", [user()->id]);
+            $result = DB::fetch("SELECT * FROM history WHERE uid = ?", [user()->id]);
+        }
         json_response($result);
     }
 }

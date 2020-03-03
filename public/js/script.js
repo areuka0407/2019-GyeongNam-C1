@@ -1,7 +1,6 @@
 let app, player;
 
 function ajax_result(res){
-    console.log("ajax_result", res);
     alert(res.message);
     switch(res.result){
         case "closeLogin":
@@ -12,6 +11,42 @@ function ajax_result(res){
             document.querySelector("#user-open").checked = false;
             break;
     }
+}
+
+function saveList({url, body, multiple = false} = {}){
+    return new Promise(resolve => {
+        fetch(new Request(url, {method: "post", body: JSON.stringify(body)}))
+        .then(x => x.json())
+        .then(x => {
+            if(multiple == true){
+                x = x.map(y => {
+                        y.list = JSON.parse(y.list);
+                        return y;
+                    });
+            }
+            else {
+                x.list = JSON.parse(x.list);
+            }
+            resolve(x);
+        });
+    });
+}
+
+function loadList({url, multiple = false} = {}){
+    return new Promise(resolve => {
+        fetch(new Request(url, {method: "post"}))
+        .then(x => x.json())
+        .then(x => {
+            if(multiple){
+                    x = x.map(y => {
+                        y.list = JSON.parse(y.list);
+                    return y;
+                });
+            }
+            else x.list = JSON.parse(x.list);
+            resolve(x);
+        });
+    });
 }
 
 
@@ -32,7 +67,7 @@ location.getValue = function(){
     while(/(?<key>[^?&=]+)=(?<value>[^?&=]+)/ig.test(v)){
         let matches = /(?<key>[^?&=]+)=(?<value>[^?&=]+)/ig.exec(v);
         let {key, value} = matches.groups;
-        result[key] = value;
+        result[key] = decodeURI(value);
         v = v.substr(v.indexOf(matches[0]) + matches[0].length);
     }
     return result;
@@ -52,6 +87,17 @@ Number.prototype.toClockTime = function(){
 
     return `${min}:${sec}`;
 };
+
+Array.prototype.softIncludes = function(item){
+    for(let i = 0; i < this.length; i++){
+        if(this[i] == item) return true;
+    }
+    return false;
+}
+
+Number.prototype.toPercent = function(){
+    return (this * 100).toFixed(1) + "%";
+}
 
 const actions = {
     index: () => {
@@ -76,7 +122,7 @@ const actions = {
             let elem = document.createElement("div");
             elem.innerHTML = `<div class="album has-context" data-context="openPlaylist nextPlay addQueue">
                                 <div class="cover" style="background-image: url('images/covers/${item.albumImage}')">
-                                    <button class="btn-play"><i class="fa fa-play"></i></button>
+                                    <button data-idx="${item.idx}" class="btn-play"><i class="fa fa-play"></i></button>
                                 </div>
                                 <div class="info">
                                     <b class="title">${item.name}</b>
@@ -84,7 +130,6 @@ const actions = {
                                 </div>
                             </div>`;
             elem.firstChild.dataset.idx = item.idx;
-            elem.querySelector(".btn-play").addEventListener("click", () => indexPlay(item));
             $popularBox.querySelector("#popular").append(elem.firstElementChild);
         }
         rows.push($popularBox);
@@ -102,7 +147,7 @@ const actions = {
                                 <div class="album-list wrap">
                                     <div class="album has-context" data-context="openPlaylist nextPlay addQueue" data-idx="${item.idx}">
                                         <div class="cover" style="background-image: url('images/covers/${item.albumImage}');">
-                                            <button class="btn-play"><i class="fa fa-play"></i></button>
+                                            <button data-idx="${item.idx}" class="btn-play"><i class="fa fa-play"></i></button>
                                         </div>
                                         <div class="info">
                                             <b class="title">${item.name}</b>
@@ -118,7 +163,7 @@ const actions = {
                 elem.dataset.context = "openPlaylist nextPlay addQueue";
 
                 elem.innerHTML = `<div class="cover" style="background-image: url('images/covers/${item.albumImage}');">
-                                        <button class="btn-play"><i class="fa fa-play"></i></button>
+                                        <button data-idx="${item.idx}" class="btn-play"><i class="fa fa-play"></i></button>
                                     </div>
                                     <div class="info">
                                         <b class="title">${item.name}</b>
@@ -127,7 +172,6 @@ const actions = {
                 $albumList.append(elem);
                 elem.dataset.idx = item.idx;
             }
-            elem.querySelector(".btn-play").addEventListener("click", () => indexPlay(item));
         });
 
         rows.forEach((x, i) => {
@@ -142,13 +186,6 @@ const actions = {
         setTimeout(() => {
             app.$loading.remove();
         }, 500);
-
-        function indexPlay(item){
-            player.queue = [item];
-            player.playIndex = 0;
-            player.$audio.src = "/music/" + item.url;
-            player.$audio.currentTime = 0;
-        }
     },
     library: () => {
         // 최근 재생한 곡
@@ -156,11 +193,11 @@ const actions = {
         $history.innerHTML = "";
 
         if(player.history.length === 0) $history.innerHTML = "<div>아직 재생된 곡이 없습니다.</div>";
-        player.history.forEach(h => {
+        player.history.forEach((h, i) => {
             let elem = document.createElement("div");
-            elem.innerHTML = `<div class="album has-context" data-context="removeHistory openPlaylist playNext addQueue">
+            elem.innerHTML = `<div class="album has-context" data-context="removeHistory openPlaylist nextPlay addQueue" data-hcontext="removeHistory" data-idx="${h.idx}" data-hdx="${i}">
                                 <div class="cover" style="background-image: url('images/covers/${h.albumImage}');">
-                                    <button class="btn-play"><i class="fa fa-play"></i></button>
+                                    <button data-idx="${h.idx}" class="btn-play"><i class="fa fa-play"></i></button>
                                 </div>
                                 <div class="info">
                                     <b class="title">${h.name}</b>
@@ -203,9 +240,9 @@ const actions = {
         if(queue.length === 0) $container.innerHTML = "<div class='ml-3'>재생중인 음악이 없습니다.</div>";
         queue.forEach((q, i) => {
             let elem = document.createElement("div");
-            elem.innerHTML = `<div class="album has-context ${player.playIndex === i ? "active" : ""}" data-idx="${q.idx}" data-context="openPlaylist removeQueue">
+            elem.innerHTML = `<div class="album has-context ${player.playIndex === i ? "active" : ""}" data-idx="${q.idx}" data-context="openPlaylist removeQueue"${q.s_rate && q.s_rate ? `title="지지도: ${q.s_rate.toPercent()}, 신뢰도: ${q.t_rate.toPercent()}"`: ""}>
                                 <div class="cover" style="background-image: url('images/covers/${q.albumImage}');">
-                                    <button class="btn-play"><i class="fa fa-play"></i></button>
+                                    <button data-idx="${q.idx}" class="btn-play"><i class="fa fa-play"></i></button>
                                 </div>
                                 <div class="info">
                                     <div class="d-flex justify-content-between align-items-center">
@@ -255,7 +292,7 @@ const actions = {
             elem.dataset.idx = itemIdx;
             elem.dataset.ldx = playList.idx;
             elem.innerHTML = `<div class="cover" style="background-image: url('images/covers/${item.albumImage}');">
-                                    <button class="btn-play"><i class="fa fa-play"></i></button>
+                                    <button data-idx="${item.idx}" class="btn-play"><i class="fa fa-play"></i></button>
                                 </div>
                                 <div class="info">
                                     <b class="title">${item.name}</b>
@@ -266,6 +303,42 @@ const actions = {
             $list.append(elem);
         });
 
+        setTimeout(() => {
+            app.$loading.remove();
+        }, 500);
+    },
+    search: () => {
+        let value = location.getValue();
+        let keyword = value.hasOwnProperty("keyword") ? value.keyword : "";
+        let $container = document.querySelector("#search-container");
+        let $list = $container.querySelector("#search-result");
+        
+        $container.querySelector(".keyword").innerText = keyword;
+
+        // filter
+        let _musicList = app.musicList.slice(0).filter(x => {
+            let c_name = x.name.indexOf(keyword) >= 0;
+            let c_artist = x.artist.indexOf(keyword) >= 0;
+            return c_name || c_artist;
+        });
+        
+
+        $list.innerHTML = _musicList.length > 0 ? "" : "<div class='ml-3'>검색된 음악이 없습니다.</div>";
+        _musicList.forEach(x => {
+            let elem = document.createElement("div");
+            elem.classList.add("album", "has-context");
+            elem.dataset.context = "openPlaylist nextPlay addQueue";
+            elem.dataset.idx = x.idx;
+            elem.innerHTML = `<div class="cover" style="background-image: url('images/covers/${x.albumImage}');">
+                                    <button data-idx="${x.idx}" class="btn-play"><i class="fa fa-play"></i></button>
+                                </div>
+                                <div class="info">
+                                    <b class="title">${x.name}</b>
+                                    <small class="text-muted">${x.artist}</small>
+                                </div>`;
+            $list.append(elem);
+        });
+     
         setTimeout(() => {
             app.$loading.remove();
         }, 500);
@@ -288,8 +361,14 @@ class App {
 
         this.loginLabel = document.querySelector("#login-label");
 
+        this.user = await this.loginCheck();
         this.musicList = await this.loadMusic();
+
         player = new Player();
+        await player.init();
+
+        this.$searchBar = document.querySelector("#search-bar");
+        this.$searchBtn = document.querySelector("#search-btn");
 
         this.loading();
         this.event();
@@ -316,6 +395,33 @@ class App {
             .then(res => res.json())
             .then(res => ajax_result(res));
         });
+
+
+        // 검색 이벤트
+        this.$searchBar.addEventListener("keydown", e => e.keyCode === 13 && this.search());
+        this.$searchBtn.addEventListener("click", () => this.search());
+
+        let $search = document.querySelector("#search");
+        let $list = document.createElement("div");
+        $list.classList.add("list");
+        this.$searchBar.addEventListener("focus", () => {
+            $list.innerHTML = ``;
+            this.searchList.forEach(x => {
+                let $item = document.createElement("div");
+                $item.classList.add("item");
+                $item.innerText = x;
+                $item.addEventListener("mousedown", () => {
+                    this.$searchBar.value = x;
+                    this.search();
+                });
+                $list.append($item);
+            });
+            $search.append($list);
+        });
+
+        this.$searchBar.addEventListener("blur", () => {
+            $list.remove();
+        });
     }
 
     async loading(){
@@ -323,6 +429,10 @@ class App {
 
         // 로그인 정보 받아서 적용
         this.user = await this.loginCheck();
+        this.searchList = (await loadList({url: "/search/get-list"})).list;
+        player.history = (await loadList({url: "/history/get-list"})).list;
+        player.playList = await loadList({url: "/playlist/get-list", multiple: true});
+
         if(this.user){
             this.loginLabel.innerText = "로그아웃";
             this.loginLabel.onclick = () => this.logout();
@@ -330,10 +440,9 @@ class App {
         else {
             this.loginLabel.innerText = "로그인";
             this.loginLabel.onclick = () => true;
+            player.history = [];
+            player.playList = [];
         }
-
-        // 재생목록 정보 받아서 적용
-        player.playList = await this.loadPlaylist();
            
 
         // 각 페이지 별 액션 실행
@@ -362,6 +471,16 @@ class App {
                                             });
             item.dataset.event = true;
         });
+
+        // 각 아이템 별 재생버튼에 이벤트 부여
+        if(this.current_page !== "queue")
+            document.querySelectorAll(".btn-play").forEach(btn => {
+                btn.addEventListener("click", e => {
+                    let m_idx = e.currentTarget.dataset.idx;
+                    let item = this.musicList.find(({idx}) => idx == m_idx);
+                    player.playNow(item);
+                });
+            });
     }
 
     route(pathName){
@@ -389,13 +508,14 @@ class App {
     openContext({e, item}){
         // 콘텍스트 이름
         const menuNames = {
-            "nextPlay": "다음 곡으로 재생",
+            "nextPlay": "다음 음악으로 재생",
             "setPlaylist": "플레이리스트 재생",
             "openPlaylist": "플레이리스트에 추가",
             "removePlayItem": "플레이리스트에서 삭제",
             "removePlaylist": "플레이리스트 삭제",
             "addQueue": "대기열에 추가",
-            "removeQueue" : "대기열에서 삭제"
+            "removeQueue" : "대기열에서 삭제",
+            "removeHistory": "재생 기록 삭제"
         };
 
         // 일반 콘텍스트 삭제
@@ -407,9 +527,11 @@ class App {
 
         let data = this.musicList.find(x => x.idx == item.dataset.idx);
         let listIdx = e.currentTarget.dataset.lcontext ? item.dataset.ldx : null; 
+        let historyIdx = e.currentTarget.dataset.hcontext ? item.dataset.hdx : null;
         
         let menuList = e.currentTarget.dataset.context.split(" ");
         let lmenuList = e.currentTarget.dataset.lcontext ? e.currentTarget.dataset.lcontext.split(" ") : [];
+        let hmenuList = e.currentTarget.dataset.hcontext ? e.currentTarget.dataset.hcontext.split(" ") : [];
 
         let elem = document.createElement("div");
         elem.classList.add("context-menu");
@@ -419,7 +541,7 @@ class App {
         menuList.forEach(menu => {
             let menuElem = document.createElement("div");
             menuElem.classList.add("item");
-            menuElem.addEventListener("mousedown", event => lmenuList.includes(menu) ? player[menu]({event, data, listIdx}) : player[menu]({event, data}));
+            menuElem.addEventListener("mousedown", event => lmenuList.includes(menu) ? player[menu]({event, data, listIdx}) : hmenuList.includes(menu) ? player[menu]({event, historyIdx}) : player[menu]({event, data}));
             menuElem.innerText = menuNames[menu];
             elem.append(menuElem);
         });
@@ -471,69 +593,76 @@ class App {
         return false;
     }
 
-    savePlaylist(){
-        return new Promise(resolve => {
-            fetch(new Request("/playlist/set-list", {method: "post", body: JSON.stringify(player.playList)}))
-            .then(item => item.json())
-            .then(result => {
-                player.playList = result.map(x => {
-                    x.list = JSON.parse(x.list);
-                    return x;
-                });
-                resolve();
-            });
-        });
+    search(){
+        let value = this.$searchBar.value;
+        history.pushState({path: "/search"+value}, null, "/search?keyword="+value);
+        this.route("/search");
+
+        let idx = this.searchList.findIndex(x => x === value);
+        if(idx >= 0) {
+            this.searchList.splice(idx, 1);
+            this.searchList.unshift(value);
+        }
+        else {
+            let length = this.searchList.unshift(value);
+            if(length > 5) this.searchList.pop();
+        }
+
+        this.$searchBar.blur();
+        this.$searchBar.focus();
+        saveList({url: "/search/set-list", body: this.searchList})
     }
 
-    loadPlaylist(){
-        if(!this.user) return [];
+    // 다음곡 자동 추천
+    nextRecommand(item){  
+        let IDX = item.idx;
 
-        return new Promise(resolve => {
-            fetch(new Request("/playlist/get-list", {method: "post"}))
-            .then(res => res.json())
-            .then(res => {
-                res = res.map(item => {
-                    item.list = JSON.parse(item.list);
+        return new Promise(res => {
+            fetch(new Request("/playlist/all-list", {method: "post"}))
+            .then(x => x.json())
+            .then(list => {
+                list = list.map(x => JSON.parse(x.list));
+
+                let m = JSON.parse(JSON.stringify(this.musicList));
+                m = m.filter(x => x.idx != IDX).map(item => {
+                    
+                    // 지지도 구하기
+                    // A와 B가 함께 나오는 재생목록
+                    let temp1 = list.filter(l => l.softIncludes(IDX) && l.softIncludes(item.idx)); 
+                    item.s_rate = temp1.length / list.length;
+                    
+
+                    // 신뢰도 구하기
+                    // A가 나오는 재생 목록
+                    let temp2 = list.filter(l => l.softIncludes(IDX));      
+                    // temp2 에서 B가 나오는 재생목록
+                    let temp3 = temp2.filter(l => l.softIncludes(item.idx));
+                    item.t_rate = temp3.length === 0 || temp2.length === 0 ? 0 : temp3.length / temp2.length;
+
+                    item.score = item.s_rate * item.t_rate
+
                     return item;
-                }) 
-                resolve(res);
-            });
-        }); 
-    }
+                });
 
-    saveHistory(){
-        return new Promise(resolve => {
-            fetch(new Request("/history/set-list", {method: "post", body: JSON.stringify(player.history)}))
-            .then(x => x.json())
-            .then(res => {
-                player.history = JSON.parse(res);
-                console.log("save history", player.history);
-                resolve();
-            });
-        });
-    }
-
-    loadHistroy(){
-        return new Promise(resolve => {
-            fetch(new Request("/history/get-list", {method: "post"}))
-            .then(x => x.json())
-            .then(res => {
-                console.log("load history", player.history);
-                resolve(JSON.parse(res));
+                let maxIdx = -1;
+                let reducer = (p, c, i) => {
+                    let compare = Math.max(p, c.score);
+                    if(compare == c.score) maxIdx = i;
+                    return compare;
+                };
+                m.reduce(reducer, 0);
+                
+                res(m[maxIdx]);
             });
         });
     }
 }
 
 class Player {
-    constructor(){
-        this.init();
-    }
-
     async init(){
         this.playIndex = -1;
-        this.history = app.user ? await app.loadHistroy() : [];
-        console.log(this.history);
+        this.history = [];
+
         this.playList = [];
         this.playListAi = 0;
         this.queue = [];
@@ -543,7 +672,7 @@ class Player {
         this.canPlay = false;
         this.lyric = false;
         this.l_data = [];
-        this.repeat = "queue";
+        this.repeat = "none";
 
         this.$info = document.querySelector("#play-area .info")
         this.$lyrics = document.querySelector("#lyric");
@@ -567,12 +696,23 @@ class Player {
     event(){
         // 오디오 이벤트
         this.$audio.addEventListener("loadedmetadata", () => {
-            console.log("loadmetadata", this.$audio.src);
-            
-            let currentItem = this.queue[this.playIndex];
-            let idx = this.history.unshift(currentItem);
-            if(idx === 6) this.history.pop();
-            app.saveHistory();
+            if(app.user){
+                let currentItem = this.queue[this.playIndex];
+
+                let idx = this.history.findIndex(({idx}) => idx == currentItem.idx);
+                if(idx >= 0){
+                    this.history.splice(idx, 1);
+                    this.history.unshift(currentItem);
+                }
+                else {
+                    let length = this.history.unshift(currentItem);
+                    if(length > 5) this.history.pop();
+                }
+                
+                saveList({url: "/history/set-list", body: this.history}).then(result => {
+                    this.history = result.list;
+                });
+            }
 
             this.$audio.pause();
             this.$audio.currentTime = 0;
@@ -589,12 +729,21 @@ class Player {
                     this.$playBtn.click();
                     break;
                 case "queue":
-                    this.next();
-                    break;
                 case "none":
-                    break;
+                    this.next();
             }
         });
+
+        this.$audio.addEventListener("timeupdate", e => {
+            // 시간 체크
+            if(e.currentTarget.currentTime > 60 && app.user == null){
+                this.$i_process.down = false;
+                this.$audio.pause();
+                alert("비회원은 1분 미리듣기만 가능합니다!");
+                this.next();
+            }
+        });
+
 
         // 재생/일시정지 버튼
         this.$playBtn.addEventListener("click", (e) => {
@@ -664,6 +813,7 @@ class Player {
             if(!this.canPlay) return;
             this.next();
         });
+
     }
 
     async update(){
@@ -720,13 +870,6 @@ class Player {
         if(this.canPlay){
             if(!this.$i_process.down) this.$i_process.value = currentTime;
             this.$duration.innerText = duration.toClockTime();
-
-            // 시간 체크
-            if(currentTime > 60 && app.user == null){
-                this.$i_process.down = false;
-                alert("비회원은 1분 미리듣기만 가능합니다!");
-                this.next();
-            }
 
             // 자막 체크
             try {
@@ -810,6 +953,9 @@ class Player {
                 .then(res => res.json())
                 .then(res => {
                     let {idx, name} = res;
+                    res.list = JSON.parse(res.list);
+
+                    console.log(res);
                     this.playList.push(res);
                     elem.insertBefore(createItem(idx, name), $buttons);
                 });
@@ -836,7 +982,7 @@ class Player {
             playList.list.push(x);
         });
 
-        app.savePlaylist().then(() => {
+        saveList({url: "/playlist/set-list", body: this.playList, multiple: true}).then(() => {
             app.current_page !== "index" && app.loading();
         });
         
@@ -857,7 +1003,7 @@ class Player {
             playList.list.splice(dataIdx, 1);
         }
         
-        app.savePlaylist().then(() => {
+        saveList({url: "/playlist/set-list", body: this.playList, multiple: true}).then(() => {
             app.current_page !== "index" && app.loading();
         });
     }
@@ -875,14 +1021,36 @@ class Player {
     }
 
     next = () => {
-        this.playIndex = this.playIndex + 1 >= this.queue.length ? 0 : this.playIndex + 1;
-        this.$audio.src = "/music/" + this.queue[this.playIndex].url;
+        console.log(this.$audio.currentTime, this.repeat);
+        if(this.repeat === "queue"){
+            this.playIndex = this.playIndex + 1 >= this.queue.length ? 0 : this.playIndex + 1;
+            this.$audio.src = "/music/" + this.queue[this.playIndex].url;
+            this.$audio.currentTime = 0;
+        }
+        else if(this.repeat === "none"){
+            if(this.playIndex + 1 >= this.queue.length){
+                let currentItem = this.queue[this.playIndex];
+                app.nextRecommand(currentItem).then(next => {
+                    this.playIndex++;
+                    this.queue.push(next);
+                    this.$audio.src = "/music/" + next.url;
+                });
+            }
+            else this.$audio.src = "/music/" + this.queue[++this.playIndex].url;
+        }
     }
 
     prev = () => {
         this.playIndex = this.playIndex - 1 < 0 ? 0 : this.playIndex - 1;
         this.$audio.src = "/music/" + this.queue[this.playIndex].url;
         this.$audio.currentTime = 0;
+    }
+
+    playNow(item){
+        player.queue = [item];
+        player.playIndex = 0;
+        player.$audio.src = "/music/" + item.url;
+        player.$audio.currentTime = 0;
     }
 
     nextPlay({listIdx, data}){
@@ -913,6 +1081,12 @@ class Player {
             this.playIndex = 0;
             this.$audio.src = "/music/" + this.queue[0].url;    
         }
+    }
+
+    removeHistory({historyIdx}){
+        this.history.splice(historyIdx, 1);
+        saveList({url: "/history/set-list", body: this.history});
+        app.loading();
     }
 
     removeQueue = ({data}) => {

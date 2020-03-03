@@ -63,7 +63,7 @@
     "artist": "벤",
     "url": "벤 BEN - 헤어져줘서 고마워 Thank you for Goodbye Official MV.mp3",
     "lyrics": "벤 BEN - 헤어져줘서 고마워 Thank you for Goodbye Official M_V.txt",
-    "genre": ""
+    "genre": "발라드"
   },
   {
     "idx": "6",
@@ -150,7 +150,7 @@
     "albumImage": "Circular.jpg",
     "artist": "엠씨더맥스",
     "url": "[MV] M.C the MAX(엠씨더맥스) _ After You’ve Gone(넘쳐흘러).mp3",
-    "lyrics": null,
+    "lyrics": "[MV] M.C the MAX(엠씨더맥스) _ After You’ve Gone(넘쳐흘러).txt",
     "genre": "발라드"
   },
   {
@@ -161,7 +161,7 @@
     "albumImage": "Circular.jpg",
     "artist": "엠씨더맥스",
     "url": "엠씨더맥스(M.C The Max) - 사계(하루살이) 320K 가사포함.mp3",
-    "lyrics": "엠씨더맥스(M.C The Max) - 사계(하루살이) 320K 가사포함.mp3",
+    "lyrics": null,
     "genre": "발라드"
   },
   {
@@ -202,7 +202,7 @@
     "name": "SOLO",
     "release": "2018.11.12",
     "albumName": "SOLO",
-    "albumImage": "제니 (JENNIE)",
+    "albumImage": "SOLO.jpg",
     "artist": "제니 (JENNIE)",
     "url": "JENNIE - 'SOLO' MV.mp3",
     "lyrics": null,
@@ -239,7 +239,7 @@
     "artist": "TWICE (트와이스)",
     "url": "TWICE FANCY MV.mp3",
     "lyrics": null,
-    "genre": ""
+    "genre": "댄스"
   },
   {
     "idx": "22",

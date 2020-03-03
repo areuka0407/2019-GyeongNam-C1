@@ -54,4 +54,29 @@ class MainController {
     function listPage(){
         view("playlist");
     }
+
+    function searchPage(){
+        view("search");
+    }
+
+
+    function setSearch(){
+        if(!user()) exit;
+        
+        $input = file_get_contents("php://input");
+        DB::query("UPDATE searched SET list = ? WHERE uid = ?", [$input, user()->id]);
+
+        json_response(["list" => $input]);
+    }
+
+    function getSearch(){
+        if(!user()) json_response(["list" => "[]"]);
+        
+        $data = DB::fetch("SELECT * FROM searched WHERE uid = ?", [user()->id]);
+        if(!$data){
+            DB::query("INSERT INTO searched(uid, list) VALUES (?, '[]')", [user()->id]);
+            $data = DB::fetch("SELECT * FROM searched WHERE uid = ?", [user()->id]);
+        }
+        json_response($data);
+    }
 }

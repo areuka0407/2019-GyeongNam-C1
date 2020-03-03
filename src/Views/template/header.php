@@ -23,7 +23,7 @@
                     <input type="text" id="user_id" name="user_id" class="form-control" placeholder="아이디">
                 </div>
                 <div class="form-group">
-                    <input type="password" id="password" name="password" class="form-control" placeholder="비밀번호">
+                    <input type="password" id="password" name="password" class="form-control" placeholder="비밀번호" autocomplete="false">
                 </div>
                 <button title="로그인" class="mt-4">
                     <i class="fa fa-arrow-right"></i>
@@ -56,10 +56,10 @@
             </div>
             <div class="right">
                 <div id="search" class="ml-5">
-                    <form class="d-flex align-items-center h-100">
-                        <input type="text" id="search-bar" name="keyword" placeholder="검색어를 입력하세요.">
+                    <div class="d-flex align-items-center h-100">
+                        <input type="text" id="search-bar" name="keyword" placeholder="검색어를 입력하세요." autocomplete="off">
                         <button id="search-btn"><i class="fa fa-search"></i></button>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
