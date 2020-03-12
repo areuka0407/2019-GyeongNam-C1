@@ -316,14 +316,18 @@ const actions = {
         $container.querySelector(".keyword").innerText = keyword;
 
         // filter
-        let _musicList = app.musicList.slice(0).filter(x => {
+        let _musicList = app.musicList.filter(x => {
             let c_name = x.name.indexOf(keyword) >= 0;
             let c_artist = x.artist.indexOf(keyword) >= 0;
             return c_name || c_artist;
         });
+        let mapping = _musicList.map(x => parseInt(x.idx));
+        let _playList = player.playList.filter(x => {
+            return x.list.map(x => parseInt(x)).some(x => mapping.includes(x));
+        });
         
 
-        $list.innerHTML = _musicList.length > 0 ? "" : "<div class='ml-3'>검색된 음악이 없습니다.</div>";
+        $list.innerHTML = _musicList.length + _playList.length > 0 ? "" : "<div class='ml-3'>검색된 음악이 없습니다.</div>";
         _musicList.forEach(x => {
             let elem = document.createElement("div");
             elem.classList.add("album", "has-context");
@@ -336,6 +340,22 @@ const actions = {
                                     <b class="title">${x.name}</b>
                                     <small class="text-muted">${x.artist}</small>
                                 </div>`;
+            $list.append(elem);
+        });
+
+        _playList.forEach(playList => {
+            let firstItem = playList.list.length === 0 ? null : app.musicList.find(x => x.idx == playList.list[0]);
+
+            let elem = document.createElement("div");
+            elem.classList.add("album", "link", "has-context");
+            elem.dataset.context = elem.dataset.lcontext = "setPlaylist openPlaylist nextPlay addQueue removePlaylist";
+            elem.dataset.ldx = playList.idx;
+            elem.dataset.href = "/playlist?playlist="+playList.idx;
+            elem.innerHTML = `<div class="cover" ${firstItem ? "style=\"background-image: url('/images/covers/"+ firstItem.albumImage +"')\"": ""}></div>
+                            <div class="info">
+                                <b class="title">${playList.name}</b>
+                                <small class="text-muted">노래 ${playList.list.length}곡</small>
+                            </div>`;
             $list.append(elem);
         });
      
@@ -377,6 +397,7 @@ class App {
     event(){
         //페이지 이동 이벤트
         window.addEventListener("popstate", e => {
+            console.log("popstate", e.state.path);
             this.route(e.state.path);
         });
 
@@ -465,7 +486,6 @@ class App {
                                                 // history.pushState((Object)state, null, (String)pathname)
                                                 // state: popstate 이벤트의 state로 전달될 데이터
                                                 // pathName: 페이지 이동 없이 주소창이 해당 값으로 바뀜
-
                                                 history.pushState({path: href}, null, href);
                                                 this.route(href);
                                             });
@@ -484,6 +504,7 @@ class App {
     }
 
     route(pathName){
+        console.log(pathName);
         // 모든 컨텍스트 창 삭제
         let exist;
         exist = document.querySelector(".context-menu");
@@ -595,8 +616,8 @@ class App {
 
     search(){
         let value = this.$searchBar.value;
-        history.pushState({path: "/search"+value}, null, "/search?keyword="+value);
-        this.route("/search");
+        history.pushState({path: "/search?keyword="+value}, null, "/search?keyword="+value);
+        this.route("/search?keyword="+value);
 
         let idx = this.searchList.findIndex(x => x === value);
         if(idx >= 0) {
